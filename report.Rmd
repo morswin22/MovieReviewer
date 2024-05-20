@@ -13,16 +13,24 @@ runtime: shiny
     display: flex;
     align-items: center;
     flex-direction: column;
+    margin-top: 10px;
 }
 .navbar-brand {
     display: flex;
     justify-content: space-between;
-    width: 100vw;    
+    width: calc(100vw - 20px);    
+}
+.shiny-html-output.shiny-bound-output {
+  position: absolute;
+  width: calc(100% - 10px);
+  height: calc(100vh - 278px)!important;
+  top: 278px; 
 }
 </style>
+<!-- 268px offset + 10px padding -->
 
 
-```{r setup, include=FALSE}
+```{r global, include=FALSE}
 library(flexdashboard)
 library(ggplot2)
 library(plotly)
@@ -39,23 +47,105 @@ library(ggsci)
 library(shiny)
 library(lorem)
 library(ggsci)
+
+movies <- read.csv2("./imdb-movies-dataset.csv", sep = ",", dec = ".")
+movies <- movies[1:1000, ]
+flat_movies <- movies %>%
+    separate_rows(Genre, sep = ",")
 ```
 
-Page 1
+Datatable
 =====================================
 
 Column {data-width=650}
 -----------------------------------------------------------------------
 
-### Charts vs Pride
+### Datatable
 
-```{r echo=F, message=F, cache=TRUE}
-movies <- read.csv2("./imdb-movies-dataset.csv", sep = ",", dec = ".")
-movies <- movies[1:1000, ]
-flat_movies <- movies %>%
-    separate_rows(Genre, sep = ",")
-# head(flat_movies)
+```{r}
+library(DT)
+prettyTable <- function(table_df, round_columns_func=is.numeric, round_digits=2) {
+    DT::datatable(table_df, style="bootstrap", escape = FALSE, filter = "top", rownames = FALSE, extensions = "Buttons", options = list(dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print'))) %>%
+    formatRound(unlist(lapply(table_df, round_columns_func)), round_digits)
+}
+prettyTable(movies %>% select(-c(Review, Review.Title)) %>% mutate(Poster = paste('<img src="', Poster, '" style="width: 100%;" />')))
 ```
+
+Page 2
+=====================================
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+<div style="height: 500px"></div>
+
+```{r}
+sliderInput('years', label = 'Range of Years', step=1, min=min(flat_movies$Year), max = max(flat_movies$Year), value = c(min(flat_movies$Year),max(flat_movies$Year)))
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Rating for selected years
+
+```{r}
+renderPlot({
+  years = reactive(input$years)
+  
+  filtered = flat_movies %>% filter(years()[1] < Year & Year < years()[2])
+  
+  ggplot(
+    filtered,
+    aes(x = Year, y = Rating, color = Genre)
+) +
+    geom_point(alpha = 0.5) +
+    xlim(min(flat_movies$Year), max(flat_movies$Year)) + 
+    scale_color_jco() +
+    theme_bw() +
+    theme(legend.title = element_blank())
+  }, res = 96)
+```
+
+Page 3
+=====================================
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+<div style="height: 500px"></div>
+
+```{r}
+genres = flat_movies$Genre %>% unique()
+selectInput("genres", label = "Selected genres", choices = genres, selected = genres %>% sample(5), multiple = TRUE)
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Rating for selected genres
+
+```{r}
+renderPlot({
+  genres = reactive(input$genres)
+  
+  filtered = flat_movies %>% filter(Genre %in% genres())
+  
+  ggplot(
+    filtered,
+    aes(x = Year, y = Rating, color = Genre)
+) +
+    geom_point(alpha = 0.5) +
+    xlim(min(flat_movies$Year), max(flat_movies$Year)) + 
+    scale_color_jco() +
+    theme_bw() +
+    theme(legend.title = element_blank())
+  }, res = 96)
+```
+
+Page 4
+=====================================
+
+### Plot
 
 ```{r}
 p <- ggplot(
@@ -70,20 +160,6 @@ p <- ggplot(
 ggplotly(p)
 ```
 
-Page 2
-=====================================
-
-Column {data-width=350}
------------------------------------------------------------------------
-
-```{r}
-shiny::sliderInput('years', label = 'Range of Years', min=min(flat_movies$Year), max = max(flat_movies$Year), value = c(1990,2020))
-```
-
-Column {data-width=650}
------------------------------------------------------------------------
-
-
 About
 =====================================
 
@@ -93,7 +169,7 @@ Column {data-width=650}
 
 [IMDB Movies Dataset](https://www.kaggle.com/datasets/amanbarthwal/imdb-movies-data)
 
-This dataset includes key details about each movie such as title, release year, certificate (age rating), duration in minutes, genre, IMDB rating, Metascore (a score aggregated from various critics), director, main cast, number of votes, and a brief description.
+The IMDb Movies Dataset is one of the most extensive collections of movie-related data available. It includes a wide range of attributes such as titles, genres, cast and crew, release dates, ratings, and reviews. 
 
 - Poster: link of the movie poster.
 - Title: name of the movie.
@@ -111,43 +187,16 @@ This dataset includes key details about each movie such as title, release year, 
 - Review Title: title of the review.
 - Review: movie review (review with highest votes on it).
 
-This dataset is versatile and can support a wide range of analyses and applications in both academic research and practical implementations in the entertainment industry.
+This richness allows for in-depth analysis and insights into the film industry and audience preferences. It may be used in various scenarios - for example in recommendation system.
 
 Column {data-width=350}
 -----------------------------------------------------------------------
 
 ### About authors
 
-```{r}
-library(lorem)
-
-ipsum(1)
-```
+- Bernart Mateusz 156072
+- Janiak Patryk 156053
 
 ### Motivation
 
-```{r}
-library(lorem)
-
-ipsum(1)
-```
-
-```{r tabsets, echo=FALSE}
-shinyApp(
-  ui = fillPage(
-    fillCol(flex = c(NA, 1), 
-      inputPanel(
-        selectInput("region", "Region:", choices = colnames(WorldPhones))
-      ),
-      plotOutput("phonePlot", height = "100%")
-    )
-  ),
-  server = function(input, output) {
-    output$phonePlot <- renderPlot({
-      barplot(WorldPhones[,input$region]*1000, 
-              ylab = "Number of Telephones", xlab = "Year")
-    })
-  },
-  options = list(height = 600)
-)
-```
+We want to get a nice grade 😊
