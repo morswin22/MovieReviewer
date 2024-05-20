@@ -1,0 +1,153 @@
+---
+title: "Movie reviewer"
+author: "Bernart Mateusz 156072, Janiak Patryk 156053"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    logo: "./03_logotyp_pp_wersja_ang/PP_logotyp_ANG_WHITE.png"
+runtime: shiny
+---
+<style>
+.navbar-header {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+.navbar-brand {
+    display: flex;
+    justify-content: space-between;
+    width: 100vw;    
+}
+</style>
+
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(gridExtra)
+library(cowplot)
+library(stringr)
+library(tidyr)
+library(grid)
+library(flexdashboard)
+library(ggplot2)
+library(plotly)
+library(ggsci)
+library(shiny)
+library(lorem)
+library(ggsci)
+```
+
+Page 1
+=====================================
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Charts vs Pride
+
+```{r echo=F, message=F, cache=TRUE}
+movies <- read.csv2("./imdb-movies-dataset.csv", sep = ",", dec = ".")
+movies <- movies[1:1000, ]
+flat_movies <- movies %>%
+    separate_rows(Genre, sep = ",")
+# head(flat_movies)
+```
+
+```{r}
+p <- ggplot(
+    flat_movies[sample(nrow(flat_movies), 1000), ],
+    aes(x = Year, y = Rating, color = Genre)
+) +
+    geom_point(alpha = 0.5) +
+    scale_color_jco() +
+    theme_bw() +
+    theme(legend.title = element_blank())
+
+ggplotly(p)
+```
+
+Page 2
+=====================================
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+```{r}
+shiny::sliderInput('years', label = 'Range of Years', min=min(flat_movies$Year), max = max(flat_movies$Year), value = c(1990,2020))
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+
+About
+=====================================
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+### About dataset
+
+[IMDB Movies Dataset](https://www.kaggle.com/datasets/amanbarthwal/imdb-movies-data)
+
+This dataset includes key details about each movie such as title, release year, certificate (age rating), duration in minutes, genre, IMDB rating, Metascore (a score aggregated from various critics), director, main cast, number of votes, and a brief description.
+
+- Poster: link of the movie poster.
+- Title: name of the movie.
+- Year: year the movie was released.
+- Certificate: age rating given to the movie (e.g., PG, R).
+- Duration (min): length of the movie in minutes.
+- Genre: genre(s) of the movie (e.g., Action, Comedy, Drama).
+- Rating: IMDB user rating for the movie.
+- Metascore: score from critics.
+- Director: director(s) of the movie.
+- Cast: main actors in the movie.
+- Votes: number of votes the movie received on IMDB.
+- Description: brief summary of the movie's plot.
+- Review Count: total count of reviews.
+- Review Title: title of the review.
+- Review: movie review (review with highest votes on it).
+
+This dataset is versatile and can support a wide range of analyses and applications in both academic research and practical implementations in the entertainment industry.
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### About authors
+
+```{r}
+library(lorem)
+
+ipsum(1)
+```
+
+### Motivation
+
+```{r}
+library(lorem)
+
+ipsum(1)
+```
+
+```{r tabsets, echo=FALSE}
+shinyApp(
+  ui = fillPage(
+    fillCol(flex = c(NA, 1), 
+      inputPanel(
+        selectInput("region", "Region:", choices = colnames(WorldPhones))
+      ),
+      plotOutput("phonePlot", height = "100%")
+    )
+  ),
+  server = function(input, output) {
+    output$phonePlot <- renderPlot({
+      barplot(WorldPhones[,input$region]*1000, 
+              ylab = "Number of Telephones", xlab = "Year")
+    })
+  },
+  options = list(height = 600)
+)
+```
