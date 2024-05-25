@@ -24,7 +24,7 @@ prettyTable <- function(table_df, round_columns_func=is.numeric, round_digits=2)
 }
 
 genres = flat_movies$Genre %>% unique()
-directors = flat_movies$Director %>% na.omit() %>% unique()
+directors = flat_movies$Director %>% na.omit %>% unique()
 
 ui <- dashboardPage(
   dashboardHeader(title = "Movie Reviewer",
@@ -91,7 +91,7 @@ ui <- dashboardPage(
             fluidRow(
               box(title = "Director genres", status="primary", 
                   plotOutput("plot_directors_genres", height = 250)),
-              box(title = "Inputs", status="info",
+              box(title = "Director", status="info",
                   selectInput("single_director_page4", 
                               label = "Select a Director", choices = directors, 
                               selected = directors[1]), height = 250)
