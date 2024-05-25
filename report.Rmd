@@ -142,23 +142,114 @@ renderPlot({
   }, res = 96)
 ```
 
-Page 4
+Directors
 =====================================
 
-### Plot
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+<div style="height: 500px"></div>
 
 ```{r}
-p <- ggplot(
-    flat_movies[sample(nrow(flat_movies), 1000), ],
-    aes(x = Year, y = Rating, color = Genre)
-) +
-    geom_point(alpha = 0.5) +
-    scale_color_jco() +
-    theme_bw() +
-    theme(legend.title = element_blank())
-
-ggplotly(p)
+directors = flat_movies$Director %>% unique()
+selectInput("single_director_page4", label = "Select a Director", choices = directors, selected = directors[1])
 ```
+Column {data-width=300}
+-----------------------------------------------------------------------
+
+### Director gernes
+
+```{r}
+output$plot_directors <- renderPlotly({
+  director <- reactive(input$single_director_page4)
+  
+  print(input$single_director_page4)
+  print(typeof(director))
+  print(typeof(flat_movies$Director))
+  filtered <- flat_movies %>% filter(Director == director())
+  print(director())
+  
+  genre_counts <- table(filtered$Genre)
+  
+  # Sort the genres based on their counts
+  sorted_genres <- sort(genre_counts, decreasing = TRUE)
+  
+  # Get the top 5 genres
+  top_genres <- names(sorted_genres)[1:5]
+  
+  # Combine the rest into "Other" category
+  other_count <- sum(sorted_genres[-(1:5)])
+
+  # Create a data frame for the pie chart
+  pie_df <- data.frame(
+    Genre = c(top_genres, "Other"),
+    Count = c(sorted_genres[1:5], other_count)
+  )
+  pie_df <- na.omit(pie_df) %>% filter(Count != 0)
+  print(pie_df)
+
+  # Create the pie chart using ggplot
+  pie_chart <- ggplot(pie_df, aes(x = Genre, y = Count, fill = Genre, text = paste(Genre, ": ", Count))) +
+    geom_bar(stat = "identity") +
+    # coord_polar(theta = "y") +
+    theme_minimal() +
+    labs(title = paste("Genres Distribution for", director()),
+         x = "Gerne",
+         y = "Count") +
+    theme(legend.position="none")
+
+
+  # Convert ggplot to plotly and specify tooltip
+  ggplotly(pie_chart, tooltip = "text")
+})
+# Output the plotly chart
+plotlyOutput("plot_directors")
+
+```
+
+Column {data-width=300}
+-----------------------------------------------------------------------
+
+### Director ratings
+
+```{r}
+output$plot_director_ratings <- renderPlotly({
+  director <- reactive(input$single_director_page4)
+  
+  filtered <- flat_movies %>% 
+    filter(Director == director() & !is.na(Rating)) %>%
+    mutate(Ratings = round(Rating, 0)) %>%
+    filter(!is.na(Ratings) & !is.na(Ratings))
+  
+  genre_counts <- as.data.frame(table(filtered$Ratings))
+
+  # Create a data frame for the pie chart
+  pie_df <- data.frame(
+    Rating = genre_counts$Var1,
+    Count = genre_counts$Freq
+  )
+  
+  # Remove rows with 0 count and NA values
+  pie_df <- pie_df %>% filter(Count != 0)
+  
+  print(pie_df)
+  
+  custom_palette <- c("#1f78b4", "#33a02c", "#e31a1c", "#ff7f00", "#6a3d9a", "#a6cee3")
+  
+  pie_chart <- ggplot(pie_df, aes(x = Rating, y = Count, fill = Rating, text = paste(Rating, ": ", Count))) +
+    geom_bar(stat = "identity") +
+    scale_fill_manual(values = custom_palette) + 
+    theme_minimal() +
+    labs(title = paste("Ratings Distribution for", director())) +
+    theme(legend.position = "none")
+
+  ggplotly(pie_chart, tooltip = "text")
+})
+
+plotlyOutput("plot_director_ratings")
+
+```
+
 
 About
 =====================================

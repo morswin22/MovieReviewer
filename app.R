@@ -24,6 +24,7 @@ prettyTable <- function(table_df, round_columns_func=is.numeric, round_digits=2)
 }
 
 genres = flat_movies$Genre %>% unique()
+directors = flat_movies$Director %>% na.omit() %>% unique()
 
 ui <- dashboardPage(
   dashboardHeader(title = "Movie Reviewer",
@@ -41,7 +42,7 @@ ui <- dashboardPage(
       menuItem("Page 2", tabName = "page2", icon = icon("th")),
       menuItem("Page 3", tabName = "page3", icon = icon("dashboard")),
       menuItem("Page 4", tabName = "page4", icon = icon("th")),
-      menuItem("Page 5", tabName = "page5", icon = icon("dashboard")),
+      menuItem("Directors", tabName = "page5", icon = icon("dashboard")),
       menuItem("Page 6", tabName = "page6", icon = icon("th")),
       menuItem("About", tabName = "about", icon = icon("info"))
     ),
@@ -86,9 +87,21 @@ ui <- dashboardPage(
         )
       ),
       tabItem(tabName = "page5",
-        fluidRow(
-          h2("Page 5")
-        )
+          fluidRow(
+            fluidRow(
+              box(title = "Director genres", status="primary", 
+                  plotOutput("plot_directors_genres", height = 250)),
+              box(title = "Inputs", status="info",
+                  selectInput("single_director_page4", 
+                              label = "Select a Director", choices = directors, 
+                              selected = directors[1]), height = 250)
+            ),
+            fluidRow(
+              box(title = "Director ratings", status="primary", 
+                  plotOutput("plot_director_ratings", height = 250))
+            )
+            
+          )
       ),
       tabItem(tabName = "page6",
           fluidRow(
@@ -169,6 +182,65 @@ server <- function(input, output) {
       theme_bw() +
       theme(legend.title = element_blank())
   }, res = 96)
+  
+  output$plot_directors_genres <- renderPlot({
+    director <- reactive(input$single_director_page4)
+    
+    filtered <- flat_movies %>% filter(Director == director())
+
+    genre_counts <- table(filtered$Genre)
+    
+    sorted_genres <- sort(genre_counts, decreasing = TRUE)
+    
+    top_genres <- names(sorted_genres)[1:5]
+    
+    other_count <- sum(sorted_genres[-(1:5)])
+    
+    pie_df <- data.frame(
+      Genre = c(top_genres, "Other"),
+      Count = c(sorted_genres[1:5], other_count)
+    )
+    pie_df <- na.omit(pie_df) %>% filter(Count != 0)
+
+    ggplot(pie_df, aes(x = Genre, y = Count, fill = Genre,
+                       text = paste(Genre, ": ", Count))) +
+      geom_bar(stat = "identity") +
+      theme_minimal() +
+      labs(title = paste("Genres Distribution for", director()),
+           x = "Gerne",
+           y = "Count") +
+      theme(legend.position="none")
+  }, res = 96)
+  
+  output$plot_director_ratings <- renderPlot({
+    director <- reactive(input$single_director_page4)
+    
+    filtered <- flat_movies %>% 
+      filter(Director == director() & !is.na(Rating)) %>%
+      mutate(Ratings = round(Rating, 0)) %>%
+      filter(!is.na(Ratings) & !is.na(Ratings))
+    
+    genre_counts <- as.data.frame(table(filtered$Ratings))
+    
+    pie_df <- data.frame(
+      Rating = genre_counts$Var1,
+      Count = genre_counts$Freq
+    )
+    
+    pie_df <- pie_df %>% filter(Count != 0)
+    
+    custom_palette <- c("#1f78b4", "#33a02c", "#e31a1c", "#ff7f00", 
+                        "#6a3d9a", "#a6cee3")
+    
+    ggplot(pie_df, aes(x = Rating, y = Count, fill = Rating, 
+                                    text = paste(Rating, ": ", Count))) +
+      geom_bar(stat = "identity") +
+      scale_fill_manual(values = custom_palette) + 
+      theme_minimal() +
+      labs(title = paste("Ratings Distribution for", director())) +
+      theme(legend.position = "none")
+  }, res = 96)
+  
 }
 
 shinyApp(ui, server)
