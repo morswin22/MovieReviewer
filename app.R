@@ -38,12 +38,11 @@ ui <- dashboardPage(
                           class = "dropdown")),
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Page 1", tabName = "page1", icon = icon("dashboard")),
-      menuItem("Page 2", tabName = "page2", icon = icon("th")),
-      menuItem("Page 3", tabName = "page3", icon = icon("dashboard")),
-      menuItem("Page 4", tabName = "page4", icon = icon("th")),
+      menuItem("Datatable", tabName = "page1", icon = icon("dashboard")),
+      menuItem("Range of Years", tabName = "page2", icon = icon("th")),
+      menuItem("Genres selection", tabName = "page3", icon = icon("dashboard")),
+      menuItem("Interactive", tabName = "page4", icon = icon("th")),
       menuItem("Directors", tabName = "page5", icon = icon("dashboard")),
-      menuItem("Page 6", tabName = "page6", icon = icon("th")),
       menuItem("About", tabName = "about", icon = icon("info"))
     ),
     tags$style(".left-side, .main-sidebar {padding-top: 72px}")
@@ -101,11 +100,6 @@ ui <- dashboardPage(
                   plotOutput("plot_director_ratings", height = 250))
             )
             
-          )
-      ),
-      tabItem(tabName = "page6",
-          fluidRow(
-            h2("Page 6")
           )
       ),
       tabItem(tabName = "about",
